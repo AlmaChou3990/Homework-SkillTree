@@ -10,6 +10,6 @@ namespace Homework_SkillTree.Data
         {
         }
 
-        public DbSet<AccountingRecord> AccountingRecord { get; set; }
+        public DbSet<AccountBook> AccountBook { get; set; }
     }
 }

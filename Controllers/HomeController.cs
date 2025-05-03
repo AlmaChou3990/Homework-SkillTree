@@ -21,15 +21,17 @@ namespace Homework_SkillTree.Controllers
 
         public async Task<IActionResult> index()
         {
-            // 建立新的空白記帳項目用於表單
-            var newItem = new AccountingRecord
+            // 日期預設顯示現在
+            var newItem = new AccountBook
             {
                 CreateDate = DateTime.Now
             };
 
             // 取得所有記帳資料並按日期排序
-            var items = await _context.AccountingRecord
+            // 取得最新10顯示，之後再做分頁
+            var items = await _context.AccountBook
                 .OrderByDescending(i => i.CreateDate)
+                .Take(10)
                 .ToListAsync();
 
             // 建立視圖模型
@@ -53,13 +55,8 @@ namespace Homework_SkillTree.Controllers
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-
-            // 如果模型驗證失敗，重新載入項目清單
-            model.Items = await _context.AccountingRecord
-                .OrderByDescending(i => i.CreateDate)
-                .ToListAsync();
-
-            return View("Index", model);
+            else
+                return View(nameof(Index), model);
         }
 
     }
