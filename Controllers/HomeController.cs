@@ -5,6 +5,11 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
+using Homework_SkillTree.Service;
+using X.PagedList.Extensions;
+using X.PagedList.EF;
+
 
 namespace Homework_SkillTree.Controllers
 {
@@ -12,14 +17,17 @@ namespace Homework_SkillTree.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly ApplicationDbContext _context;
+        private readonly IConfiguration Configuration;
 
-        public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)
+        public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, IConfiguration configuration)
         {
             _logger = logger;
             _context = context;
+            Configuration = configuration;
         }
 
-        public async Task<IActionResult> index()
+        public PaginatedList<AccountBook> AccountBooks { get; set; }
+        public async Task<IActionResult> Index(int? page)
         {
             // 日期預設顯示現在
             var newItem = new AccountBook
@@ -28,17 +36,18 @@ namespace Homework_SkillTree.Controllers
             };
 
             // 取得所有記帳資料並按日期排序
-            // 取得最新10顯示，之後再做分頁
-            var items = await _context.AccountBook
-                .OrderByDescending(i => i.CreateDate)
-                .Take(10)
-                .ToListAsync();
+            var pageSize = Configuration.GetValue("PageSize", 4);
+            var pageNumber = page ?? 1;
+            ViewBag.nowPage = pageNumber;
+            ViewBag.pageSize = pageSize;
+            var onePageOfItems = await _context.AccountBook
+                .OrderByDescending(i => i.CreateDate).ToPagedListAsync(pageNumber, pageSize);
+            ViewBag.OnePageOfItems = onePageOfItems;
 
             // 建立視圖模型
             var viewModel = new AccountingViewModel
             {
-                NewItem = newItem,
-                Items = items
+                NewItem = newItem
             };
 
             return View(viewModel);
@@ -49,9 +58,9 @@ namespace Homework_SkillTree.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(AccountingViewModel model)
         {
-            if (model.NewItem!=null)
+            if (model != null)
             {
-                _context.Add(model.NewItem);
+                await _context.AddAsync(model.NewItem);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }

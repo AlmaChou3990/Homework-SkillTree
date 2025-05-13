@@ -1,5 +1,7 @@
+@using Homework_SkillTree.Helpers
 @model Homework_SkillTree.Models.AccountingViewModel
-
+@using X.PagedList.Mvc.Core; 
+@using X.PagedList;
 @{
     ViewData["Title"] = "Home Page";
 }
@@ -9,9 +11,9 @@
         <div class="card-body">
             <form asp-action="Create" method="post">
                 <div class="row mb-3">
-                    <label for="NewItem.Type" class="col-sm-2 col-form-label">類別</label>
+                    <label for="Type" class="col-sm-2 col-form-label">類別</label>
                     <div class="col-sm-10">
-                        <select id="Type" asp-for="NewItem.Type" class="form-select" aria-invalid="true">
+                        <select id="Type" asp-for="NewItem.Type" class="form-select">
                             <option value="" selected>請選擇</option>
                             <option value="1">支出</option>
                             <option value="0">收入</option>
@@ -22,14 +24,14 @@
                 <div class="row mb-3">
                     <label for="NewItem.Price" class="col-sm-2 col-form-label">金額</label>
                     <div class="col-sm-10">
-                        <input type="text" class="form-control" asp-for="NewItem.Price" id="Price" placeholder="金額" aria-invalid="true" aria-describedby="測試">
+                        <input type="text" class="form-control" asp-for="NewItem.Price" id="Price" placeholder="金額"  aria-describedby="測試">
                         <span asp-validation-for="NewItem.Price" class="form-text text-danger"></span>
                     </div>
                 </div>
                 <div class="row mb-3">
                     <label for="NewItem.CreateDate" class="col-sm-2 col-form-label">日期</label>
                     <div class="col-sm-10">
-                        <input type="text" class="form-control" asp-for="NewItem.CreateDate" id="CreateDate" placeholder="日期">
+                        <input type="date" class="form-control" asp-for="NewItem.CreateDate" id="CreateDate" placeholder="日期">
                         <span asp-validation-for="NewItem.CreateDate" class="form-text text-danger"></span>
                     </div>
                 </div>
@@ -37,6 +39,7 @@
                     <label for="NewItem.Description" class="col-sm-2 col-form-label">備註</label>
                     <div class="col-sm-10">
                         <textarea class="form-control" asp-for="NewItem.Description" id="Description" rows="3"></textarea>
+                        <span asp-validation-for="NewItem.Description" class="form-text text-danger"></span>
                     </div>
                 </div>
                 <div class="row">
@@ -57,26 +60,29 @@
                         <th>類別</th>
                         <th>日期</th>
                         <th>金額</th>
-                         <th>備註</th> 
+                        <th>備註</th>
                     </tr>
                 </thead>
                 <tbody>
                     @{
-                        int rowNumber = 0;
+                        int rowNumber = 1 * ((int)ViewBag.nowPage-1) * (int)ViewBag.pageSize;
                     }
-                    @foreach (var item in Model.Items)
+                    @foreach (var item in ViewBag.OnePageOfItems)
                     {
                         rowNumber++;
                         <tr>
                             <td>@rowNumber</td>
-                            <td>@item.TypeName</td>
-                            <td>@item.CreateDate.ToString("yyyy-MM-dd")</td>
-                            <td>@item.Price.ToString("N2")</td>
-                            <td>@item.Description</td> 
+                            <td nowrap="nowrap">
+                                @Html.RenderTypeName((string)item.TypeName)
+                            </td>
+                            <td nowrap="nowrap">@item.CreateDate.ToString("yyyy-MM-dd")</td>
+                            <td nowrap="nowrap">@item.Price.ToString("N2")</td>
+                            <td style="word-break: break-all;width:70%">@item.Description</td>
                         </tr>
                     }
                 </tbody>
             </table>
+            <div style="text-align:center;float:center"> @Html.PagedListPager((IPagedList)ViewBag.OnePageOfItems, page => Url.Action("Index", new { page }),new PagedListRenderOptions(){LiElementClasses = new List<string> {"OnlyShowFivePagesAtATime"}})</div>
         </div>
     </div>
 </div>
@@ -85,4 +91,20 @@
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
+    <script>
+        $.validator.addMethod("CustomDateRangeAttribute", function (value, element) {
+            if (!value) return true; // 空值不驗證這一條（交由 Required 處理）
+            const inputDate = new Date(value);
+            const today = new Date();
+            // 設定今天的時間為 00:00:00
+            today.setHours(0, 0, 0, 0);
+            inputDate.setHours(0, 0, 0, 0);
+            return inputDate <= today;
+        });
+
+        $.validator.unobtrusive.adapters.add("CustomDateRangeAttribute", [], function (options) {
+            options.rules["CustomDateRangeAttribute"] = true;
+            options.messages["CustomDateRangeAttribute"] = options.message;
+        });
+    </script>
 }
